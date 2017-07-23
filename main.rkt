@@ -12,7 +12,8 @@
   [call/fixture (-> fixture? (-> any) any)]
   [call/test-fixture (-> fixture? (-> any) any)]))
 
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     "private/syntax.rkt")
          disposable
          disposable/file
          disposable/testing
@@ -43,15 +44,6 @@
 
 (define-simple-macro (with-test-fixture fix:expr body:expr ...+)
   (call/test-fixture fix (thunk body ...)))
-
-(begin-for-syntax
-  (define-splicing-syntax-class fixture-clause
-    #:attributes ([unsplice 1] expr id)
-    (pattern (~seq #:fixture expr:expr #:as id:id)
-             #:attr [unsplice 1] (syntax->list #'(#:fixture expr #:as id)))
-    (pattern (~seq #:fixture id:id)
-             #:with expr #'id
-             #:attr [unsplice 1] (syntax->list #'(#:fixture id)))))
 
 (define-syntax-parser test-case/fixture
   [(_ name:str (~seq fixture:fixture-clause rest:fixture-clause ...)
