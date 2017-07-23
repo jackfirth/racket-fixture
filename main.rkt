@@ -1,5 +1,17 @@
 #lang racket/base
 
+(require racket/contract/base)
+
+(provide
+ with-test-fixture
+ test-begin/fixture
+ test-case/fixture
+ (contract-out
+  [fixture (-> disposable? fixture?)]
+  [fixture? predicate/c]
+  [call/fixture (-> fixture? (-> any) any)]
+  [call/test-fixture (-> fixture? (-> any) any)]))
+
 (require (for-syntax racket/base)
          disposable
          disposable/file
@@ -21,26 +33,70 @@
 
 (define (call/fixture fix thnk)
   (with-disposable ([v (fixture-disp fix)])
-    (parameterize ([(fixture-param fix) v])
-      (thnk))))
+    (parameterize ([(fixture-param fix) v]) (thnk))))
 
 (define (call/test-fixture fix thnk)
-  (parameterize ([current-test-case-around (call/fixture fix _)]) (thnk)))
+  (define old-around (current-test-case-around))
+  (define (fixture-around test-thnk)
+    (old-around (thunk (call/fixture fix test-thnk))))
+  (parameterize ([current-test-case-around fixture-around]) (thnk)))
 
-(define-syntax-parser with-fixtures
-  [(_ (fix:expr rest:expr ...) body ...+)
-   #'(call/test-fixture fix (thunk (with-fixtures (rest ...) body ...)))]
-  [(_ () body ...+) #'(let () body ...)])
+(define-simple-macro (with-test-fixture fix:expr body:expr ...+)
+  (call/test-fixture fix (thunk body ...)))
 
-(define seqlease
-  (acquire-global
-   (disposable-pool (sequence->disposable '(1 2 3 4 5)) #:max 5)))
+(begin-for-syntax
+  (define-splicing-syntax-class fixture-clause
+    #:attributes ([unsplice 1] expr id)
+    (pattern (~seq #:fixture expr:expr #:as id:id)
+             #:attr [unsplice 1] (syntax->list #'(#:fixture expr #:as id)))
+    (pattern (~seq #:fixture id:id)
+             #:with expr #'id
+             #:attr [unsplice 1] (syntax->list #'(#:fixture id)))))
 
-(define item (fixture seqlease))
+(define-syntax-parser test-case/fixture
+  [(_ name:str (~seq fixture:fixture-clause rest:fixture-clause ...)
+      body:expr ...+)
+   #'(let ([fixture.id fixture.expr])
+       (with-test-fixture fixture.id
+         (test-case/fixture name rest.unsplice ... ... body ...)))]
+  [(_ name:str body:expr ...+) #'(test-case name body ...)])
 
-(with-fixtures (item)
-  (test-case "outer"
-    (displayln (item))
-    (displayln (test-case "blah" (item)))
-    (displayln (test-case "bloo" (item)))
-    (displayln (item))))
+(define-syntax-parser test-begin/fixture
+  [(_ (~seq fixture:fixture-clause rest:fixture-clause ...) body:expr ...+)
+   #'(let ([fixture.id fixture.expr])
+       (with-test-fixture fixture.id
+         (test-begin/fixture rest.unsplice ... ... body ...)))]
+  [(_ body:expr ...+) #'(test-begin body ...)])
+
+(module+ test
+  (test-case "test-begin/fixture"
+    (define-values (seq log)
+      (disposable/event-log (sequence->disposable '(1 2 3))))
+    (define item (fixture seq))
+    (test-begin/fixture
+      #:fixture item
+      (check-equal? (item) 1)
+      (test-case "first-nested" (check-equal? (item) 2))
+      (test-case "second-nested" (check-equal? (item) 3))
+      (check-equal? (item) 1))
+    (define expected-log
+      '((alloc 1) (alloc 2) (dealloc 2) (alloc 3) (dealloc 3) (dealloc 1)))
+    (check-equal? (log) expected-log))
+  (test-case "test-begin/fixture #:as"
+    (test-begin/fixture
+      #:fixture (fixture (disposable-pure 'foo)) #:as foo
+      (check-equal? (foo) 'foo)))
+  (test-case "test-begin/fixture multiple"
+    (define foo-fix (fixture (disposable-pure 'foo)))
+    (test-begin/fixture
+      #:fixture foo-fix
+      #:fixture (fixture (disposable-pure 'bar)) #:as bar-fix
+      (check-equal? (foo-fix) 'foo)
+      (check-equal? (bar-fix) 'bar)))
+  (define foo-fix (fixture (disposable-pure 'foo)))
+  (test-case/fixture "test-case/fixture"
+    #:fixture foo-fix
+    #:fixture (fixture (disposable-pure 'bar)) #:as bar-fix
+    (check-equal? (foo-fix) 'foo)
+    (check-equal? (bar-fix) 'bar)
+    (check-equal? (current-test-name) "test-case/fixture")))
