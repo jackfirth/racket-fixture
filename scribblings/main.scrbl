@@ -30,3 +30,15 @@ is provided under the terms of the @hyperlink[license-url]{Apache License 2.0}.
 @bold{Warning!} This library is @emph{experimental}; it may change in backwards
 incompatible ways without notice. As such, now is the best time for feedback and
 suggestions so feel free to open a repository issue or reach out to me directly.
+
+@section{Overview of Collections and Modules}
+
+This package provides several modules, all in the @racketmodname[fixture]
+collection:
+
+@itemlist[
+ @item{@racketmodname[fixture] - Everything and the kitchen sink.}
+ @item{@racketmodname[fixture/base] - Base definitions of
+  @fixture-tech{fixtures} and all testing framework agnostic forms.}
+ @item{@racketmodname[fixture/rackunit] - Tools for using fixtures with
+  @racketmodname[rackunit].}]
