@@ -3,7 +3,10 @@
 (module+ test
   (require disposable
            disposable/testing
+           doc-coverage
            fixture
+           fixture/base
+           fixture/rackunit
            rackunit))
 
 (module+ test
@@ -32,4 +35,8 @@
   (test-case/fixture "test-case/fixture"
     #:fixture foo-fix
     (check-equal? (foo-fix) 'foo)
-    (check-equal? (current-test-name) "test-case/fixture")))
+    (check-equal? (current-test-name) "test-case/fixture"))
+  (test-case "documentation"
+    (check-all-documented 'fixture)
+    (check-all-documented 'fixture/base)
+    (check-all-documented 'fixture/rackunit)))
