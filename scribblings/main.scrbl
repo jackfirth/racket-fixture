@@ -16,13 +16,17 @@ case. Fixtures are built on top of @racketmodname[rackunit] test cases and the
 document.
 
 @(racketblock
+  (define tmpdir (fixture (disposable-directory)))
+  (define tmpfile (fixture (disposable-file)))
+
   (test-case/fixture "tests"
-    #:fixture (directory-fixture) #:as tmpdir
-    #:fixture (file-fixture #:parent-dir (tmpdir)) #:as tmpfile
+    #:fixture tmpdir
+    #:fixture tmpfile
     (test-case "some-test"
       ... use tmpdir and tmpfile ...)
     (test-case "other-test"
-      ... use a different tmpdir and tmpfile ...)))
+      ... use different tmpdir and tmpfile ...)))
+
 
 Source code for this library is available @hyperlink[source-url]{on Github} and
 is provided under the terms of the @hyperlink[license-url]{Apache License 2.0}.
@@ -37,8 +41,91 @@ This package provides several modules, all in the @racketmodname[fixture]
 collection:
 
 @itemlist[
- @item{@racketmodname[fixture] - Everything and the kitchen sink.}
+ @item{@racketmodname[fixture] - Re-provides the exports of
+  @racketmodname[fixture/base] and @racketmodname[fixture/rackunit].}
  @item{@racketmodname[fixture/base] - Base definitions of
   @fixture-tech{fixtures} and all testing framework agnostic forms.}
  @item{@racketmodname[fixture/rackunit] - Tools for using fixtures with
   @racketmodname[rackunit].}]
+
+@section{Data Model}
+@defmodule[fixture/base]
+
+A @fixture-tech[#:definition? #t]{fixture} is an external resource that must be
+properly initialized and disposed of for a test. Fixtures are essentially a pair
+of a @disposable-tech{disposable} defining the external resource and a
+@parameter-tech{parameter} that is set for each test to an instance of the
+disposable. A fixture implements @racket[prop:procedure], acting as a procedure
+that returns the current value of its underlying parameter returning @racket[#f]
+if unset.
+
+@defproc[(fixture? [v any/c]) boolean?]{
+ Returns @racket[#t] if @racket[v] is a @fixture-tech{fixture}, returns
+ @racket[#f] otherwise.}
+
+@defproc[(fixture [disp disposable?]) fixture?]{
+ Returns a @fixture-tech{fixture} that provides instances of values created with
+ @racket[disp].}
+
+@defproc[(call/fixture [fix fixture?] [proc (-> any)]) any]{
+ Initializes @racket[fix] to a new instance of the fixture's disposable within
+ the body of @racket[proc], disposing of the instance of the fixture after
+ calling @racket[proc]. Returns whatever values are returned by @racket[proc].
+
+ @(fixture-examples
+   (define ex (fixture example-disposable))
+   (ex)
+   (call/fixture ex (thunk (* (ex) (ex)))))}
+
+@section{RackUnit Integration}
+@defmodule[fixture/rackunit]
+
+@defproc[(call/test-fixture [fix fixture?] [proc (-> any)]) any]{
+ Parameterizes @racket[current-test-case-around] within the body of
+ @racket[proc] to initialize @racket[fix] to a new instance of the fixture's
+ disposable. This means each individual use of @racket[test-begin],
+ @racket[test-case], or @racket[test-suite] in @racket[proc] has access to a
+ separate instance of @racket[fix] that is created and disposed of before and
+ after the test.
+
+ @(fixture-examples
+   (define ex (fixture example-disposable))
+   (call/test-fixture ex
+     (thunk
+      (test-case "first test" (displayln (ex)))
+      (test-case "second test"
+        (displayln (ex))
+        (test-case "nested test" (displayln (ex)))))))}
+
+@defform[(test-begin/fixture fixture-clause ... body ...+)
+         #:grammar ([fixture-clause (code:line #:fixture fixture-id)])
+         #:contracts ([fixture-id fixture?])]{
+ Like @racket[test-begin], but with support for @fixture-tech{fixtures}. The
+ @racket[body] forms are wrapped in a @racket[test-begin] form, which is itself
+ wrapped in a @racket[call/test-fixture] form for each @racket[fixture-id].
+
+ @(fixture-examples
+   (define ex1 (fixture example-disposable))
+   (define ex2 (fixture example-disposable))
+   (define (ex-sum) (+ (ex1) (ex2)))
+   (test-begin/fixture
+     #:fixture ex1
+     #:fixture ex2
+     (displayln (ex-sum))
+     (test-case "nested" (displayln (ex-sum)))))}
+
+@defform[(test-case/fixture name fixture-clause ... body ...+)
+         #:grammar ([name string-literal]
+                    [fixture-clause (code:line #:fixture fixture-id)])
+         #:contracts ([fixture-id fixture?])]{
+ Like @racket[test-case], but with support for @fixture-tech{fixtures}. The
+ @racket[body] forms are wrapped in a @racket[test-case] form, which is itself
+ wrapped in a @racket[call/test-fixture] form for each @racket[fixture-id].
+
+ @(fixture-examples
+   (define ex (fixture example-disposable))
+   (define (double-ex) (* (ex) 2))
+   (test-case/fixture "test with fixtures"
+     #:fixture ex
+     (displayln (double-ex))
+     (test-case "nested" (displayln (double-ex)))))}

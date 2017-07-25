@@ -4,7 +4,8 @@
   '(("scribblings/main.scrbl" () (library) "fixture")))
 (define version "0.1")
 (define deps
-  '("fancy-app"
+  '("reprovide-lang"
+    "fancy-app"
     "rackunit-lib"
     "base"
     "disposable"))

@@ -2,11 +2,14 @@
 An experimental Racket library providing fixtures, test-case-specific disposables with automatic setup and teardown
 
 ```racket
+(define tmpdir (fixture (disposable-directory)))
+(define tmpfile (fixture (disposable-file)))
+
 (test-case/fixture "tests"
-  #:fixture (directory-fixture) #:as tmpdir
-  #:fixture (file-fixture #:parent-dir (tmpdir)) #:as tmpfile
+  #:fixture tmpdir
+  #:fixture tmpfile
   (test-case "some-test"
     ... use tmpdir and tmpfile ...)
   (test-case "other-test"
-    ... use a different tmpdir and tmpfile ...))
+    ... use different tmpdir and tmpfile ...))
 ```
