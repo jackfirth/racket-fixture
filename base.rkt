@@ -3,21 +3,26 @@
 (require racket/contract/base)
 
 (provide
+ define-fixture
  (contract-out
-  [fixture (-> disposable? fixture?)]
+  [fixture (-> symbol? disposable? fixture?)]
   [fixture? predicate/c]
   [call/fixture (-> fixture? (-> any) any)]))
 
 (require disposable
-         racket/function)
+         racket/function
+         syntax/parse/define)
 
 
-(struct fixture (disp param)
+(struct fixture (name disp param)
   #:constructor-name make-fixture
   #:omit-define-syntaxes
   #:property prop:procedure (λ (self) ((fixture-param self))))
 
-(define (fixture disp) (make-fixture disp (make-parameter #f)))
+(define (fixture name disp) (make-fixture name disp (make-parameter #f)))
+
+(define-simple-macro (define-fixture id:id disp:expr)
+  (define id (fixture 'id disp)))
 
 (define (call/fixture fix thnk)
   (with-disposable ([v (fixture-disp fix)])

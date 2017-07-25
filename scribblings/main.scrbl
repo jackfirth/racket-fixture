@@ -16,8 +16,8 @@ case. Fixtures are built on top of @racketmodname[rackunit] test cases and the
 document.
 
 @(racketblock
-  (define tmpdir (fixture (disposable-directory)))
-  (define tmpfile (fixture (disposable-file)))
+  (define-fixture tmpdir (disposable-directory))
+  (define-fixture tmpfile (disposable-file))
 
   (test-case/fixture "tests"
     #:fixture tmpdir
@@ -63,9 +63,13 @@ if unset.
  Returns @racket[#t] if @racket[v] is a @fixture-tech{fixture}, returns
  @racket[#f] otherwise.}
 
-@defproc[(fixture [disp disposable?]) fixture?]{
- Returns a @fixture-tech{fixture} that provides instances of values created with
- @racket[disp].}
+@defproc[(fixture [name symbol?] [disp disposable?]) fixture?]{
+ Returns a @fixture-tech{fixture} named @racket[name] that provides instances of
+ values created with @racket[disp].}
+
+@defform[(define-fixture id:id disposable-expr)
+         #:contracts ([disposable-expr disposable?])]{
+ Equivalent to @racket[(define id (fixture 'id disposable-expr))].}
 
 @defproc[(call/fixture [fix fixture?] [proc (-> any)]) any]{
  Initializes @racket[fix] to a new instance of the fixture's disposable within
@@ -73,7 +77,7 @@ if unset.
  calling @racket[proc]. Returns whatever values are returned by @racket[proc].
 
  @(fixture-examples
-   (define ex (fixture example-disposable))
+   (define-fixture ex example-disposable)
    (ex)
    (call/fixture ex (thunk (* (ex) (ex)))))}
 
@@ -89,7 +93,7 @@ if unset.
  after the test.
 
  @(fixture-examples
-   (define ex (fixture example-disposable))
+   (define-fixture ex example-disposable)
    (call/test-fixture ex
      (thunk
       (test-case "first test" (displayln (ex)))
@@ -105,8 +109,8 @@ if unset.
  wrapped in a @racket[call/test-fixture] form for each @racket[fixture-id].
 
  @(fixture-examples
-   (define ex1 (fixture example-disposable))
-   (define ex2 (fixture example-disposable))
+   (define-fixture ex1 example-disposable)
+   (define-fixture ex2 example-disposable)
    (define (ex-sum) (+ (ex1) (ex2)))
    (test-begin/fixture
      #:fixture ex1
@@ -123,7 +127,7 @@ if unset.
  wrapped in a @racket[call/test-fixture] form for each @racket[fixture-id].
 
  @(fixture-examples
-   (define ex (fixture example-disposable))
+   (define-fixture ex example-disposable)
    (define (double-ex) (* (ex) 2))
    (test-case/fixture "test with fixtures"
      #:fixture ex

@@ -10,6 +10,7 @@
     "base"
     "disposable"))
 (define build-deps
-  '("racket-doc"
+  '("doc-coverage"
+    "racket-doc"
     "rackunit-doc"
     "scribble-lib"))
