@@ -30,9 +30,9 @@
    #'(with-test-fixture fix (with-test-fixture* (rest ...) body ...))])
 
 (define-simple-macro
-  (test-case/fixture name:str (~seq fixture:fixture-clause ...) body:expr ...+)
-  (with-test-fixture* (fixture.id ...) (test-case name body ...)))
-
-(define-simple-macro
   (test-begin/fixture (~seq fixture:fixture-clause ...) body:expr ...+)
   (with-test-fixture* (fixture.id ...) (test-begin body ...)))
+
+(define-simple-macro
+  (test-case/fixture name:str (~seq fixture:fixture-clause ...) body:expr ...+)
+  (with-test-fixture* (fixture.id ...) (test-case name body ...)))
