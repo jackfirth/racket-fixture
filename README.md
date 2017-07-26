@@ -1,5 +1,5 @@
 # racket-fixture [![Build Status](https://travis-ci.org/jackfirth/racket-fixture.svg?branch=master)](https://travis-ci.org/jackfirth/racket-fixture) [![codecov](https://codecov.io/gh/jackfirth/racket-fixture/branch/master/graph/badge.svg)](https://codecov.io/gh/jackfirth/racket-fixture)
-An experimental Racket library providing fixtures, test-case-specific disposables with automatic setup and teardown
+An experimental Racket library providing *test fixtures*, resources that are automatically created and destroyed for each RackUnit test case.
 
 ```racket
 (define-fixture tmpdir (disposable-directory))
