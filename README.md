@@ -13,3 +13,9 @@ An experimental Racket library providing fixtures, test-case-specific disposable
   (test-case "other-test"
     ... use different tmpdir and tmpfile ...))
 ```
+
+Available from the [Racket package catalog](https://pkgd.racket-lang.org/pkgn/package/fixture). To install:
+
+```bash
+raco pkg install fixture
+```
