@@ -1,4 +1,4 @@
-# racket-fixture
+# racket-fixture [![Build Status](https://travis-ci.org/jackfirth/racket-fixture.svg?branch=master)](https://travis-ci.org/jackfirth/racket-fixture)
 An experimental Racket library providing fixtures, test-case-specific disposables with automatic setup and teardown
 
 ```racket
