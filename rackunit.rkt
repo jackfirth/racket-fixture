@@ -15,11 +15,21 @@
          syntax/parse/define
          "base.rkt")
 
+(define fixture-infos (make-parameter '()))
+
+(define (call/fixture-info fix thunk)
+  (define new-info (make-check-info (fixture-name fix) (fixture-info fix)))
+  (parameterize ([fixture-infos (cons new-info (fixture-infos))])
+    (with-check-info (['fixtures (nested-info (fixture-infos))])
+      (thunk))))
+
 (define (call/test-fixture fix thnk)
   (define old-around (current-test-case-around))
   (define (fixture-around test-thnk)
-    (old-around (thunk (call/fixture fix test-thnk))))
-  (parameterize ([current-test-case-around fixture-around]) (thnk)))
+    (old-around
+     (thunk (call/fixture fix (thunk (call/fixture-info fix test-thnk))))))
+  (parameterize ([current-test-case-around fixture-around])
+    (thnk)))
 
 (define-simple-macro (with-test-fixture fix:expr body:expr ...+)
   (call/test-fixture fix (thunk body ...)))
