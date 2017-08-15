@@ -7,22 +7,24 @@
            fixture
            fixture/base
            fixture/rackunit
+           racket/list
            rackunit))
 
 (module+ test
   (test-case "test-begin/fixture"
-    (define-values (seq log)
+    (define-fixture item+log
       (disposable/event-log (sequence->disposable '(1 2 3))))
-    (define-fixture item seq)
+    (define (item) (first (item+log)))
+    (define (item-evts) (event-log-events (second (item+log))))
     (test-begin/fixture
-      #:fixture item
+      #:fixture item+log
       (check-equal? (item) 1)
       (test-case "first-nested" (check-equal? (item) 2))
       (test-case "second-nested" (check-equal? (item) 3))
-      (check-equal? (item) 1))
-    (define expected-log
-      '((alloc 1) (alloc 2) (dealloc 2) (alloc 3) (dealloc 3) (dealloc 1)))
-    (check-equal? (log) expected-log))
+      (check-equal? (item) 1)
+      (define expected-log
+        '((alloc 1) (alloc 2) (dealloc 2) (alloc 3) (dealloc 3)))
+      (check-equal? (item-evts) expected-log)))
   (test-case "test-begin/fixture multiple"
     (define-fixture foo-fix (disposable-pure 'foo))
     (define-fixture bar-fix (disposable-pure 'bar))
