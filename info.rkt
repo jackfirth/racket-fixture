@@ -8,7 +8,7 @@
     "fancy-app"
     "rackunit-lib"
     "base"
-    "disposable"))
+    ("disposable" #:version "0.2")))
 (define build-deps
   '("doc-coverage"
     "racket-doc"
