@@ -6,8 +6,10 @@
          fixture
          fixture/base
          fixture/rackunit
+         racket/function
          racket/list
-         rackunit)
+         rackunit
+         "util.rkt")
 
 
 (define item/log (disposable/event-log (sequence->disposable '(1 2 3))))
@@ -40,6 +42,23 @@
   #:fixture foo-fix
   (check-equal? (foo-fix) 'foo)
   (check-equal? (current-test-name) "test-case/fixture"))
+
+(test-case "fixture constructor"
+  (check-pred fixture? (fixture 'foo (disposable-pure 'foo)))
+  (check-pred fixture?
+              (fixture 'bar (disposable-pure 'bar) #:info-proc symbol->string)))
+
+(test-case "define-fixture contracts"
+  (check-equal? ((def->thunk (define foo 1))) (void))
+  (check-exn exn:fail:contract? (def->thunk (define-fixture foo 5)))
+  (check-exn exn:fail:contract?
+             (def->thunk
+               (define-fixture foo (disposable-pure 'foo) #:info-proc 5)))
+  (define (no-args) (void))
+  (check-equal? (no-args) (void))
+  (check-exn exn:fail:contract?
+             (def->thunk
+               (define-fixture foo (disposable-pure 'foo) #:info-proc no-args))))
 
 (test-case "documentation"
   (check-all-documented 'fixture)
