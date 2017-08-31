@@ -28,6 +28,7 @@
 
 (define-tech-helpers
   fixture-tech "fixture"
+  info-tech "fixture info"
   disposable-tech "disposable" disposable/scribblings/main
   parameter-tech "parameter" scribblings/guide/guide)
 
@@ -35,6 +36,7 @@
   (make-base-eval #:lang 'racket/base
                   '(require disposable
                             disposable/example
+                            disposable/file
                             fixture
                             racket/function
                             rackunit)))
