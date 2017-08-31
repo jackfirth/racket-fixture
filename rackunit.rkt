@@ -2,11 +2,8 @@
 
 (require racket/contract/base)
 
-(provide
- test-begin/fixture
- test-case/fixture
- (contract-out
-  [call/test-fixture (-> fixture? (-> any) any)]))
+(provide test-begin/fixture
+         test-case/fixture)
 
 (require (for-syntax racket/base
                      "private/syntax.rkt")
@@ -15,34 +12,32 @@
          syntax/parse/define
          "base.rkt")
 
-(define fixture-infos (make-parameter '()))
+(define (fixture->check-info fix)
+  (make-check-info (fixture-name fix) (fixture-info fix)))
 
-(define (call/fixture-info fix thunk)
-  (define new-info (make-check-info (fixture-name fix) (fixture-info fix)))
-  (parameterize ([fixture-infos (cons new-info (fixture-infos))])
-    (with-check-info (['fixtures (nested-info (fixture-infos))])
-      (thunk))))
-
-(define (call/test-fixture fix thnk)
-  (define old-around (current-test-case-around))
-  (define (fixture-around test-thnk)
-    (old-around
-     (thunk (call/fixture fix (thunk (call/fixture-info fix test-thnk))))))
-  (parameterize ([current-test-case-around fixture-around])
+(define (call/infos fixs thnk)
+  (with-check-info (['fixtures (nested-info (map fixture->check-info fixs))])
     (thnk)))
 
-(define-simple-macro (with-test-fixture fix:expr body:expr ...+)
-  (call/test-fixture fix (thunk body ...)))
+(define (call/fixtures fixs thnk)
+  ((for/fold ([thnk thnk])
+             ([fix (in-list fixs)])
+     (thunk (call/fixture fix thnk)))))
 
-(define-syntax-parser with-test-fixture*
-  [(_ () body:expr ...+) #'(let () body ...)]
-  [(_ (fix:expr rest:expr ...) body:expr ...+)
-   #'(with-test-fixture fix (with-test-fixture* (rest ...) body ...))])
+(define (around/fixtures fixs thnk)
+  (call/fixtures fixs (thunk (call/infos fixs thnk))))
 
+(define (call/test-case-around/fixtures fixs thnk)
+  (define old-around (current-test-case-around))
+  (define (around thnk) (old-around (thunk (around/fixtures fixs thnk))))
+  (parameterize ([current-test-case-around around]) (thnk)))
+  
 (define-simple-macro
   (test-begin/fixture (~seq fixture:fixture-clause ...) body:expr ...+)
-  (with-test-fixture* (fixture.id ...) (test-begin body ...)))
+  (call/test-case-around/fixtures (list fixture.id ...)
+                                  (thunk (test-begin body ...))))
 
 (define-simple-macro
   (test-case/fixture name:str (~seq fixture:fixture-clause ...) body:expr ...+)
-  (with-test-fixture* (fixture.id ...) (test-case name body ...)))
+  (call/test-case-around/fixtures (list fixture.id ...)
+                                  (thunk (test-case name body ...))))
