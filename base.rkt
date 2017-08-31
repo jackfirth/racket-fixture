@@ -30,9 +30,11 @@
 (define (fixture-info fix) ((fixture-info-proc fix) (fix)))
 
 (define-simple-macro
-  (define-fixture id:id disp:expr
-    (~optional (~seq #:info-proc info-proc) #:defaults ([info-proc #'values])))
-  (define id (fixture 'id disp #:info-proc info-proc)))
+  (define-fixture id:id disp
+    (~optional (~seq #:info-proc info-proc) #:defaults ([info-proc.c #'values])))
+  #:declare disp (expr/c #'disposable? #:name "disposable argument")
+  #:declare info-proc (expr/c #'(-> any/c any/c) #:name "info-proc argument")
+  (define id (fixture 'id disp.c #:info-proc info-proc.c)))
 
 (define (call/fixture fix thnk)
   (with-disposable ([v (fixture-disp fix)])
