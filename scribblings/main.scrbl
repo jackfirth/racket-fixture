@@ -49,7 +49,8 @@ collection:
   @racketmodname[rackunit].}]
 
 @section{Data Model}
-@defmodule[fixture/base]
+@defmodule[fixture/base #:no-declare]
+@declare-exporting[fixture/base fixture]
 
 A @fixture-tech[#:definition? #t]{fixture} is an external resource that must be
 properly initialized and disposed of for a test. Fixtures are essentially a pair
@@ -82,7 +83,8 @@ if unset.
    (call/fixture ex (thunk (* (ex) (ex)))))}
 
 @section{RackUnit Integration}
-@defmodule[fixture/rackunit]
+@defmodule[fixture/rackunit #:no-declare]
+@declare-exporting[fixture/rackunit fixture]
 
 @defproc[(call/test-fixture [fix fixture?] [proc (-> any)]) any]{
  Parameterizes @racket[current-test-case-around] within the body of
