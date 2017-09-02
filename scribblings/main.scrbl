@@ -149,12 +149,12 @@ useful.
 @declare-exporting[fixture/rackunit fixture]
 
 @defform[(test-begin/fixture fixture-clause ... body ...+)
-         #:grammar ([fixture-clause (code:line #:fixture fixture-id)])
-         #:contracts ([fixture-id fixture?])]{
+         #:grammar ([fixture-clause (code:line #:fixture fixture-expr)])
+         #:contracts ([fixture-expr fixture?])]{
  Like @racket[test-begin], but with support for @fixture-tech{fixtures}. Within
  the given @racket[body] forms, @racket[current-test-case-around] is
  parameterized to a function that wraps the test in a @racket[call/fixture]
- expression once for each @racket[fixture-id]. Every test found in the
+ expression once for each @racket[fixture-expr]. Every test found in the
  @racket[body] forms, including the outer @racket[test-begin], is allocated its
  own instance of each fixture. Fixtures are allocated in order from top to
  bottom and deallocated in reverse.
@@ -185,7 +185,7 @@ useful.
 
 @defform[(test-case/fixture name fixture-clause ... body ...+)
          #:grammar ([name string-literal]
-                    [fixture-clause (code:line #:fixture fixture-id)])
-         #:contracts ([fixture-id fixture?])]{
+                    [fixture-clause (code:line #:fixture fixture-expr)])
+         #:contracts ([fixture-expr fixture?])]{
  Like @racket[test-begin/fixture], but for @racket[test-case] instead of
  @racket[test-begin].}
