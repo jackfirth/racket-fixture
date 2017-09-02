@@ -23,10 +23,9 @@ document.
     #:fixture tmpdir
     #:fixture tmpfile
     (test-case "some-test"
-      ... use tmpdir and tmpfile ...)
+      ... use (current-tmpdir) and (current-tmpfile) ...)
     (test-case "other-test"
-      ... use different tmpdir and tmpfile ...)))
-
+      ... use different (current-tmpdir) and (current-tmpfile) ...)))
 
 Source code for this library is available @hyperlink[source-url]{on Github} and
 is provided under the terms of the @hyperlink[license-url]{Apache License 2.0}.
@@ -56,9 +55,7 @@ A @fixture-tech[#:definition? #t]{fixture} is an external resource that must be
 properly initialized and disposed of for a test. Fixtures are essentially a pair
 of a @disposable-tech{disposable} defining the external resource and a
 @parameter-tech{parameter} that is set for each test to an instance of the
-disposable. A fixture implements @racket[prop:procedure], acting as a procedure
-that returns the current value of its underlying parameter returning @racket[#f]
-if unset.
+disposable.
 
 Additionally, fixtures may have @info-tech[#:definition? #t]{fixture info};
 custom metadata about the current value of the fixture that can be used in test
@@ -82,20 +79,40 @@ useful.
 
  @(fixture-examples
    (define (example-info n) (format "example value of ~v" n))
-   (define ex (fixture 'ex example-disposable
-                       #:info-proc example-info))
-   (ex)
+   (define ex
+     (fixture 'ex example-disposable #:info-proc example-info))
+   (fixture-value ex)
    (call/fixture ex
      (thunk
-      (displayln (ex))
+      (displayln (fixture-value ex))
       (displayln (fixture-info ex)))))}
 
-@defform[(define-fixture id:id disposable-expr maybe-info)
-         #:grammar ([maybe-info (code:line) info-proc-expr])
+@defform[(define-fixture id disposable-expr fixture-option ...)
+         #:grammar ([fixture-option
+                     (code:line #:accessor-id accessor-id)
+                     (code:line #:info-proc info-proc-expr)])
          #:contracts ([disposable-expr disposable?]
                       [info-proc-expr (-> any/c any/c)])]{
- Equivalent to
- @racket[(define id (fixture 'id disposable-expr #:info-proc info-proc-expr))].}
+ Binds @racket[id] to a @fixture-tech{fixture} with name @racket['id],
+ with @disposable-tech{disposable} @racket[disposable-expr], and with its
+ @info-tech{fixture info} defined by @racket[info-proc-expr]. Additionally,
+ binds @racket[accessor-id] to a shorthand function that call
+ @racket[fixture-value] on @racket[id]. If @racket[accessor-id] is not
+ provided, it defaults to @racket[current-]@racket[id]. Each
+ @racket[fixture-option] may only be provided once.
+
+ @(fixture-examples
+   (define (example-info n) (format "example value of ~v" n))
+   (define-fixture ex example-disposable #:info-proc example-info)
+   (current-ex)
+   (call/fixture ex
+     (thunk
+      (displayln (current-ex))
+      (displayln (fixture-info ex)))))}
+
+@defproc[(fixture-value [fix fixture?]) any/c]{
+ Returns the current value of @racket[fix], or @racket[#f] if the fixture has
+ not been initialized.}
 
 @defproc[(call/fixture [fix fixture?] [proc (-> any)]) any]{
  Initializes @racket[fix] to a new instance of the fixture's disposable within
@@ -104,8 +121,8 @@ useful.
 
  @(fixture-examples
    (define-fixture ex example-disposable)
-   (ex)
-   (call/fixture ex (thunk (* (ex) (ex)))))}
+   (current-ex)
+   (call/fixture ex (thunk (* (current-ex) (current-ex)))))}
 
 @defproc[(fixture-name [fix fixture?]) symbol?]{
  Returns the name of @racket[fix].}
@@ -137,7 +154,7 @@ useful.
  @(fixture-examples
    (define-fixture ex1 example-disposable)
    (define-fixture ex2 example-disposable)
-   (define (ex-sum) (+ (ex1) (ex2)))
+   (define (ex-sum) (+ (current-ex1) (current-ex2)))
    (test-begin/fixture
      #:fixture ex1
      #:fixture ex2

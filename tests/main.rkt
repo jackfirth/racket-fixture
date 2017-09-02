@@ -20,10 +20,10 @@
     (define (item-evts) (event-log-events (second item+log)))
     (test-begin/fixture
       #:fixture item
-      (check-equal? (item) 1)
-      (test-case "first-nested" (check-equal? (item) 2))
-      (test-case "second-nested" (check-equal? (item) 3))
-      (check-equal? (item) 1)
+      (check-equal? (current-item) 1)
+      (test-case "first-nested" (check-equal? (current-item) 2))
+      (test-case "second-nested" (check-equal? (current-item) 3))
+      (check-equal? (current-item) 1)
       (define expected-log
         '((alloc 1) (alloc 2) (dealloc 2) (alloc 3) (dealloc 3)))
       (check-equal? (item-evts) expected-log))))
@@ -34,13 +34,13 @@
   (test-begin/fixture
     #:fixture foo-fix
     #:fixture bar-fix
-    (check-equal? (foo-fix) 'foo)
-    (check-equal? (bar-fix) 'bar)))
+    (check-equal? (current-foo-fix) 'foo)
+    (check-equal? (current-bar-fix) 'bar)))
 
 (define-fixture foo-fix (disposable-pure 'foo))
 (test-case/fixture "test-case/fixture"
   #:fixture foo-fix
-  (check-equal? (foo-fix) 'foo)
+  (check-equal? (current-foo-fix) 'foo)
   (check-equal? (current-test-name) "test-case/fixture"))
 
 (test-case "fixture constructor"
@@ -58,7 +58,8 @@
   (check-equal? (no-args) (void))
   (check-exn exn:fail:contract?
              (def->thunk
-               (define-fixture foo (disposable-pure 'foo) #:info-proc no-args))))
+               (define-fixture foo (disposable-pure 'foo)
+                 #:info-proc no-args))))
 
 (test-case "documentation"
   (check-all-documented 'fixture)
