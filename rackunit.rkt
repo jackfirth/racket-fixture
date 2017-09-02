@@ -5,12 +5,12 @@
 (provide test-begin/fixture
          test-case/fixture)
 
-(require (for-syntax racket/base
-                     "private/syntax.rkt")
+(require (for-syntax racket/base)
          racket/function
          rackunit
          syntax/parse/define
          "base.rkt")
+
 
 (define (fixture->check-info fix)
   (make-check-info (fixture-name fix) (fixture-info fix)))
@@ -33,11 +33,13 @@
   (parameterize ([current-test-case-around around]) (thnk)))
   
 (define-simple-macro
-  (test-begin/fixture (~seq fixture:fixture-clause ...) body:expr ...+)
-  (call/test-case-around/fixtures (list fixture.id ...)
+  (test-begin/fixture (~seq (~seq #:fixture fixture:expr) ...) body:expr ...+)
+  (call/test-case-around/fixtures (list fixture ...)
                                   (thunk (test-begin body ...))))
 
 (define-simple-macro
-  (test-case/fixture name:str (~seq fixture:fixture-clause ...) body:expr ...+)
-  (call/test-case-around/fixtures (list fixture.id ...)
+  (test-case/fixture name:str
+    (~seq (~seq #:fixture fixture:expr) ...)
+    body:expr ...+)
+  (call/test-case-around/fixtures (list fixture ...)
                                   (thunk (test-case name body ...))))
