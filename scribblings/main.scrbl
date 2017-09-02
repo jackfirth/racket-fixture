@@ -64,10 +64,6 @@ are no restrictions on the kind of values a fixture may use for info, although
 it's expected that calling @racket[write] on them produces something relatively
 useful.
 
-@defproc[(fixture? [v any/c]) boolean?]{
- Returns @racket[#t] if @racket[v] is a @fixture-tech{fixture}, returns
- @racket[#f] otherwise.}
-
 @defproc[(fixture [name symbol?]
                   [disp disposable?]
                   [#:info-proc info-proc (-> any/c any/c) values])
@@ -75,17 +71,27 @@ useful.
  Returns a @fixture-tech{fixture} named @racket[name] that provides instances of
  values created with @racket[disp]. The @racket[info-proc] defines the fixture's
  @info-tech{info}, and is called with the current value of the fixture to when
- @racket[fixture-info] is called.
+ @racket[fixture-info] is called. Fixtures must be initialized with
+ @racket[call/fixture] before use; attempting to access the current value before
+ initialization raises a contract error.
 
  @(fixture-examples
    (define (example-info n) (format "example value of ~v" n))
    (define ex
      (fixture 'ex example-disposable #:info-proc example-info))
-   (fixture-value ex)
    (call/fixture ex
      (thunk
       (displayln (fixture-value ex))
-      (displayln (fixture-info ex)))))}
+      (displayln (fixture-info ex))))
+   (eval:error (fixture-value ex)))}
+
+@defproc[(fixture? [v any/c]) boolean?]{
+ Returns @racket[#t] if @racket[v] is a @fixture-tech{fixture}, returns
+ @racket[#f] otherwise.}
+
+@defproc[(fixture-initialized? [fix fixture?]) boolean?]{
+ Returns @racket[#t] if @racket[fix] is currently initialized with
+ @racket[call/fixture], returns @racket[#f] otherwise.}
 
 @defform[(define-fixture id disposable-expr fixture-option ...)
          #:grammar ([fixture-option
@@ -104,13 +110,13 @@ useful.
  @(fixture-examples
    (define (example-info n) (format "example value of ~v" n))
    (define-fixture ex example-disposable #:info-proc example-info)
-   (current-ex)
    (call/fixture ex
      (thunk
       (displayln (current-ex))
-      (displayln (fixture-info ex)))))}
+      (displayln (fixture-info ex))))
+   (eval:error (current-ex)))}
 
-@defproc[(fixture-value [fix fixture?]) any/c]{
+@defproc[(fixture-value [fix (and/c fixture? fixture-initialized?)]) any/c]{
  Returns the current value of @racket[fix], or @racket[#f] if the fixture has
  not been initialized.}
 
@@ -118,16 +124,18 @@ useful.
  Initializes @racket[fix] to a new instance of the fixture's disposable within
  the body of @racket[proc], disposing of the instance of the fixture after
  calling @racket[proc]. Returns whatever values are returned by @racket[proc].
+ Within the dynamic extend of @racket[proc], @racket[fixture-initialized?]
+ returns @racket[#t]. Multiple uses of @racket[call/fixture] may be nested, but
+ a nested use initializes @racket[fix] to a different instance of @racket[disp].
 
  @(fixture-examples
    (define-fixture ex example-disposable)
-   (current-ex)
    (call/fixture ex (thunk (* (current-ex) (current-ex)))))}
 
 @defproc[(fixture-name [fix fixture?]) symbol?]{
  Returns the name of @racket[fix].}
 
-@defproc[(fixture-info [fix fixture?]) any/c]{
+@defproc[(fixture-info [fix (and/c fixture? fixture-initialized?)]) any/c]{
  Returns @racket[fix]'s current @info-tech{fixture info} by applying
  @racket[fix]'s fixture info procedure to the current value of the fixture.
 

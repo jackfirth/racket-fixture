@@ -48,6 +48,14 @@
   (check-pred fixture?
               (fixture 'bar (disposable-pure 'bar) #:info-proc symbol->string)))
 
+(test-case "fixture-initialized?"
+  (define-fixture foo (disposable-pure 'foo))
+  (check-false (fixture-initialized? foo))
+  (call/fixture foo
+    (thunk (check-true (fixture-initialized? foo))
+           (call/fixture foo
+             (thunk (check-true (fixture-initialized? foo)))))))
+
 (test-case "define-fixture contracts"
   (check-equal? ((def->thunk (define foo 1))) (void))
   (check-exn exn:fail:contract? (def->thunk (define-fixture foo 5)))
@@ -59,7 +67,9 @@
   (check-exn exn:fail:contract?
              (def->thunk
                (define-fixture foo (disposable-pure 'foo)
-                 #:info-proc no-args))))
+                 #:info-proc no-args)))
+  (define-fixture foo (disposable-pure 'foo) #:accessor-name get-foo)
+  (check-exn exn:fail:contract? get-foo))
 
 (test-case "documentation"
   (check-all-documented 'fixture)

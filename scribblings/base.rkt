@@ -8,6 +8,7 @@
                                   fixture/rackunit
                                   racket/base
                                   racket/contract
+                                  racket/function
                                   rackunit))
          fixture-examples)
 
@@ -19,6 +20,7 @@
                     fixture/rackunit
                     racket/base
                     racket/contract
+                    racket/function
                     rackunit)
          scribble/example
          syntax/parse/define

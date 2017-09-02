@@ -9,9 +9,10 @@
                 (#:info-proc (-> any/c any/c))
                 fixture?)]
   [fixture? predicate/c]
-  [fixture-value (-> fixture? any/c)]
+  [fixture-initialized? (-> fixture? boolean?)]
   [fixture-name (-> fixture? symbol?)]
-  [fixture-info (-> fixture? any/c)]
+  [fixture-value (-> (and/c fixture? fixture-initialized?) any/c)]
+  [fixture-info (-> (and/c fixture? fixture-initialized?) any/c)]
   [call/fixture (-> fixture? (-> any) any)]))
 
 (require (for-syntax racket/base
@@ -20,16 +21,21 @@
          syntax/parse/define)
 
 
-(struct fixture (name disp info-proc param)
+(struct fixture (name disp info-proc param init-param)
   #:constructor-name make-fixture
   #:omit-define-syntaxes)
 
-(define (fixture-value fix) ((fixture-param fix)))
-
 (define (fixture name disp #:info-proc [info-proc values])
-  (make-fixture name disp info-proc (make-parameter #f)))
+  (make-fixture name disp info-proc (make-parameter #f) (make-parameter #f)))
 
+(define (fixture-initialized? fix) ((fixture-init-param fix)))
+(define (fixture-value fix) ((fixture-param fix)))
 (define (fixture-info fix) ((fixture-info-proc fix) (fixture-value fix)))
+
+(define (call/fixture fix thnk)
+  (with-disposable ([v (fixture-disp fix)])
+    (parameterize ([(fixture-param fix) v] [(fixture-init-param fix) #t])
+      (thnk))))
 
 (begin-for-syntax
   (define (format-accessor id-stx)
@@ -46,8 +52,8 @@
   #:declare info-proc (expr/c #'(-> any/c any/c) #:name "info-proc argument")
   (begin
     (define id (fixture 'id disp.c #:info-proc info-proc.c))
-    (define (accessor-id) (fixture-value id))))
-
-(define (call/fixture fix thnk)
-  (with-disposable ([v (fixture-disp fix)])
-    (parameterize ([(fixture-param fix) v]) (thnk))))
+    (define (accessor-id)
+      (unless (fixture-initialized? id)
+        (raise-argument-error 'accessor-id "fixture not initialized"
+                              "fixture" id))
+      (fixture-value id))))
