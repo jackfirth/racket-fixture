@@ -30,38 +30,30 @@
       (with-check-info (['fixture (dynamic-info compute-infos)]) (thnk))
       (thnk)))
 
-(define (test-case-around/fixtures old-around fixs thnk)
-  (old-around
-   (thunk
-    ((for/fold ([thnk thnk])
-               ([fix (in-list (current-test-fixtures))])
-       (thunk (call/fixture fix thnk)))))))
+(define (test-case-around/fixtures fixs thnk)
+  ((for/fold ([thnk thnk])
+             ([fix (in-list (current-test-fixtures))])
+     (thunk (call/fixture fix thnk)))))
+
+;; Everything needed to properly call a test case with fixtures
+(define (call/test-fixture-context fixs test-thnk)
+  (define old-around (current-test-case-around))
+  (define (new-around thnk)
+    (old-around (thunk (test-case-around/fixtures fixs thnk))))
+  (define (test-thnk*)
+    (parameterize ([current-test-case-around new-around])
+      (test-thnk)))
+  (call/test-fixtures-info (thunk (call/test-fixtures fixs test-thnk*))))
+
+(begin-for-syntax
+  (define-splicing-syntax-class fixtures
+    (pattern (~seq (~seq #:fixture fixture:expr) ...)
+             #:with list #'(list fixture ...))))
 
 (define-simple-macro
-  (test-begin/fixture (~seq (~seq #:fixture fixture:expr) ...) body:expr ...+)
-  #:with (fix-id ...) (generate-temporaries #'(fixture ...))
-  (let* ([fix-id fixture] ...
-         [all-fixs (list fix-id ...)]
-         [old-around (current-test-case-around)])
-    (call/test-fixtures-info
-     (thunk
-      (call/test-fixtures
-       all-fixs (thunk
-                 (test-case-around/fixtures
-                  old-around all-fixs (thunk (test-begin body ...)))))))))
-
+  (test-begin/fixture fixs:fixtures body:expr ...+)
+  (call/test-fixture-context fixs.list (thunk (test-begin body ...))))
 
 (define-simple-macro
-  (test-case/fixture name:str
-    (~seq (~seq #:fixture fixture:expr) ...)
-    body:expr ...+)
-  #:with (fix-id ...) (generate-temporaries #'(fixture ...))
-  (let* ([fix-id fixture] ...
-         [all-fixs (list fix-id ...)]
-         [old-around (current-test-case-around)])
-    (call/test-fixtures-info
-     (thunk
-      (call/test-fixtures
-       all-fixs (thunk
-                 (test-case-around/fixtures
-                  old-around all-fixs (thunk (test-case name body ...)))))))))
+  (test-case/fixture name:str fixs:fixtures body:expr ...+)
+  (call/test-fixture-context fixs.list (thunk (test-case name body ...))))
