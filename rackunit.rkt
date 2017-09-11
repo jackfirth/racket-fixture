@@ -32,14 +32,14 @@
 
 (define (test-case-around/fixtures fixs thnk)
   ((for/fold ([thnk thnk])
-             ([fix (in-list (current-test-fixtures))])
+             ([fix (in-list fixs)])
      (thunk (call/fixture fix thnk)))))
 
 ;; Everything needed to properly call a test case with fixtures
 (define (call/test-fixture-context fixs test-thnk)
   (define old-around (current-test-case-around))
   (define (new-around thnk)
-    (old-around (thunk (test-case-around/fixtures fixs thnk))))
+    (test-case-around/fixtures fixs (thunk (old-around thnk))))
   (define (test-thnk*)
     (parameterize ([current-test-case-around new-around])
       (test-thnk)))

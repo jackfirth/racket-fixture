@@ -37,6 +37,18 @@
     (check-equal? (current-foo-fix) 'foo)
     (check-equal? (current-bar-fix) 'bar)))
 
+(test-case "test-begin/fixture nested"
+  (define-fixture foo (sequence->disposable '(1 2 3)))
+  (define-fixture bar (sequence->disposable '(a b c)))
+  (test-begin/fixture
+    #:fixture foo
+    (check-equal? (current-foo) 1)
+    (test-begin/fixture
+      #:fixture bar
+      (check-equal? (current-foo) 2)
+      (check-equal? (current-bar) 'a))
+    (check-equal? (current-foo) 1)))
+
 (define-fixture foo-fix (disposable-pure 'foo))
 (test-case/fixture "test-case/fixture"
   #:fixture foo-fix
