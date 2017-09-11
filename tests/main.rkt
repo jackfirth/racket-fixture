@@ -68,6 +68,11 @@
            (call/fixture foo
              (thunk (check-true (fixture-initialized? foo)))))))
 
+(test-case "fixture-info"
+  (define-fixture foo (disposable-pure 'foo) #:info-proc symbol->string)
+  (call/fixture foo
+    (thunk (check-equal? (fixture-info foo) "foo"))))
+
 (test-case "define-fixture contracts"
   (check-equal? ((def->thunk (define foo 1))) (void))
   (check-exn exn:fail:contract? (def->thunk (define-fixture foo 5)))
