@@ -4,12 +4,9 @@
          disposable/testing
          doc-coverage
          fixture
-         fixture/base
-         fixture/rackunit
          racket/function
          racket/list
          rackunit
-         rackunit/meta
          "util.rkt")
 
 
