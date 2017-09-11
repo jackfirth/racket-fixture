@@ -9,6 +9,7 @@
          racket/function
          racket/list
          rackunit
+         rackunit/meta
          "util.rkt")
 
 
@@ -48,6 +49,24 @@
       (check-equal? (current-foo) 2)
       (check-equal? (current-bar) 'a))
     (check-equal? (current-foo) 1)))
+
+(test-case "test-begin/fixture info"
+  (define-fixture foo (disposable-pure 'foo))
+  (define (failing-test)
+    (test-begin/fixture
+      #:fixture foo
+      (check-equal? 1 2)))
+  (define failure
+    (parameterize ([current-test-case-around (λ (thnk) (thnk))]
+                   [current-check-around (λ (thnk) (thnk))])
+      (with-handlers ([exn:test:check? values])
+        (failing-test))))
+  (define (is-fixtures-info? info)
+    (equal? (check-info-name info) 'fixtures))
+  (define (has-fixtures? stack) (ormap is-fixtures-info? stack))
+  (define stack (exn:test:check-stack failure))
+  (check-pred has-fixtures? stack)
+  (check-pred dynamic-info? (check-info-value (findf is-fixtures-info? stack))))
 
 (define-fixture foo-fix (disposable-pure 'foo))
 (test-case/fixture "test-case/fixture"
