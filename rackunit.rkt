@@ -27,7 +27,7 @@
 
 (define (call/test-fixtures-info thnk)
   (if (empty? (current-test-fixtures))
-      (with-check-info (['fixture (dynamic-info compute-infos)]) (thnk))
+      (with-check-info (['fixtures (dynamic-info compute-infos)]) (thnk))
       (thnk)))
 
 (define (test-case-around/fixtures fixs thnk)
