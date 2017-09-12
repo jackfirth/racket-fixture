@@ -47,23 +47,45 @@
       (check-equal? (current-bar) 'a))
     (check-equal? (current-foo) 1)))
 
+(define (normalize-dynamic-info info)
+  (define n (check-info-name info))
+  (define v (check-info-value info))
+  (cond [(dynamic-info? v)
+         (normalize-dynamic-info
+          (make-check-info n ((dynamic-info-proc v))))]
+        [(nested-info? v)
+         (define nested (map normalize-dynamic-info (nested-info-values v)))
+         (make-check-info n (nested-info nested))]
+        [else info]))
+
+(define (normalize-check-exn exn)
+  (make-exn:test:check (exn-message exn)
+                       (exn-continuation-marks exn)
+                       (map normalize-dynamic-info (exn:test:check-stack exn))))
+
+(define (test-case-around/handle-fail thnk)
+  (with-handlers ([exn:test:check? normalize-check-exn])
+    (thnk)))
+
 (test-case "test-begin/fixture info"
   (define-fixture foo (disposable-pure 'foo))
+  (define-fixture bar (disposable-pure 'bar))
   (define (failing-test)
     (test-begin/fixture
       #:fixture foo
+      #:fixture bar
       (check-equal? 1 2)))
   (define failure
-    (parameterize ([current-test-case-around (λ (thnk) (thnk))]
-                   [current-check-around (λ (thnk) (thnk))])
-      (with-handlers ([exn:test:check? values])
-        (failing-test))))
+    (parameterize ([current-test-case-around test-case-around/handle-fail])
+      (failing-test)))
   (define (is-fixtures-info? info)
     (equal? (check-info-name info) 'fixtures))
   (define (has-fixtures? stack) (ormap is-fixtures-info? stack))
   (define stack (exn:test:check-stack failure))
   (check-pred has-fixtures? stack)
-  (check-pred dynamic-info? (check-info-value (findf is-fixtures-info? stack))))
+  (check-equal? (check-info-value (findf is-fixtures-info? stack))
+                (nested-info (list (check-info 'foo 'foo)
+                                   (check-info 'bar 'bar)))))
 
 (define-fixture foo-fix (disposable-pure 'foo))
 (test-case/fixture "test-case/fixture"
