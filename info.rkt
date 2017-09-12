@@ -6,7 +6,7 @@
 (define deps
   '("reprovide-lang"
     "fancy-app"
-    ("rackunit-lib" #:version "1.7")
+    ("rackunit-lib" #:version "1.8")
     "base"
     ("disposable" #:version "0.2")))
 (define build-deps
