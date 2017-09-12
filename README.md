@@ -14,6 +14,8 @@ An experimental Racket library providing *test fixtures*, resources that are aut
     ... use different tmpdir and tmpfile ...))
 ```
 
+**This package depends on RackUnit version 1.8, which has not yet been released in the main distribution. The 6.11 Racket release will include it; you can also manually upgrade your installation of RackUnit.**
+
 Available from the [Racket package catalog](https://pkgd.racket-lang.org/pkgn/package/fixture). To install:
 
 ```bash
