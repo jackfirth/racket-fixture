@@ -1,7 +1,7 @@
 #lang info
 (define collection "fixture")
 (define scribblings
-  '(("scribblings/main.scrbl" () (library) "fixture")))
+  '(("scribblings/main.scrbl" () ("Testing") "fixture")))
 (define version "0.1")
 (define deps
   '("reprovide-lang"
